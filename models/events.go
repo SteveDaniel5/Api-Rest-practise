@@ -13,10 +13,10 @@ type Event struct {
 	Description string    `binding:"required"`
 	Location    string    `binding:"required"`
 	DateTime    time.Time `binding:"required"`
-	UserID      string
+	UserID      int64
 }
 
-func (e Event) Save() error {
+func (e *Event) Save() error {
 	query := `INSERT INTO events(name,description,location,datetime,user_id)
 	VALUES(?,?,?,?,?)`
 	stmt, err := db.DB.Prepare(query)
@@ -87,8 +87,49 @@ func (event Event) Update() error {
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 
 	_, err = stmt.Exec(event.Name, event.Description, event.Location, event.DateTime, event.ID)
 	return err
+}
+func (event Event) Delete() error {
+	query := "DELETE FROM events WHERE id =?"
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(event.ID)
+	return err
+
+}
+func (e Event) Register(userId int64) error {
+	query := "INSERT INTO registrations(event_id, user_id) VALUES (?,?)"
+	stmt, err := db.DB.Prepare(query)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(e.ID, userId)
+
+	return err
+}
+func (e Event) CancelRegistration(userId int64) error {
+	query := "DELETE FROM registrations WHERE event_id = ? AND user_Id = ?"
+
+	stmt, err := db.DB.Prepare(query)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(e.ID, userId)
+
+	return err
+
 }
